@@ -1,0 +1,261 @@
+Introduction to Data Modelling:
+
+Json, Bson & Collection:
+
+MongoDB has the document as a basic unity of data. 
+The documents in MongoDB are represented in JavaScript Object Notation (JSON).
+
+Collections are groups of documents. 
+Making an analogy, a collection is similar to a table in a relational model and a document is a record in this table. 
+And finally, collections belong to a database in MongoDB.
+
+The documents are serialized on disk in a format known as Binary JSON (BSON), a binary representation of a JSON document.
+
+Sample:
+{
+ "_id": 123456,
+ "firstName": "John",
+ "lastName": "Clay",
+ "age": 25,
+ "address": 	{	
+		"streetAddress": "131 GEN. Almério de Moura Street",
+		"city": "Rio de Janeiro",
+		"state": "RJ",
+		"postalCode": "20921060“
+		},
+ "phoneNumber":    [     
+			{"type": "home","number": "+5521 2222-3333"} ,
+	     		{"type": "mobile","number": "+5521 9888-7777"}
+		]
+}
+		
+*****************************************************************************************************
+Unlike the relational model, where you must declare a table structure, a collection doesn't enforce a certain structure for a document. 
+It is possible that a collection contains documents with completely different structures.
+We can have, for instance, on the same users collection:
+{ 
+"_id": "123456", 
+"username": "johnclay", 
+"age": 25, 
+"friends":
+[ 
+{"username": "joelsant"},
+ {"username": "adilsonbat"} 
+],
+ "active": true, 
+"gender": "male" 
+}
+
+
+{ 
+"_id": "654321", 
+"username": "santymonty", 
+"age": 25, 
+"active": true, 
+"gender": "male", 
+"eyeColor": "brown“
+ }
+
+
+In Mongo dB, all user interactions with MongoDB are made through documents. 
+
+Besides data recording, documents are a means to: 
+• Define what data can be read, written, and/or updated in queries 
+• Define which fields will be updated Data Modeling with MongoDB
+• Create indexes 
+• Configure replication 
+• Query the information from the database
+****************************************************************************************************
+
+Characteristics of documents:
+The characteristics of documents can determine your decision about how the document must be modeled. 
+
+Those are:
+The document size
+Names and values for a field in a document
+The document primary key
+
+1. Document Size
+	We must keep in mind that the maximum length for a BSON document is 16 MB. 
+	According to BSON specifications, this length is ideal for data transfers through the Web and to avoid 		the excessive use of RAM. 
+	But this is only a recommendation. Nowadays, a document can exceed the 16 MB length by using GridFS.
+
+2. Names and Values for field in a document
+	Any field's name in a document is a string. 
+	As usual, we have some restrictions on field names. They are: 
+		The _id field is reserved for a primary key 
+		You cannot start the name using the character $
+		The name cannot have a null character, or (.) 
+	Additionally, documents that have indexed fields must respect the size limit for an indexed field. 
+	The values cannot exceed the maximum size of 1,024 bytes. 
+
+3. The Document Primary Key
+	The _id field is reserved for the primary key. 
+	By default, this field must be the first one in the document, even when, during an insertion, it is not 	the first field to be inserted. 
+	Also, by definition, it is in this field that a unique index will be created.
+
+	The _id field can have any value that is a BSON type, except the array. 
+	If a document is created without an indication of the _id field, MongoDB will automatically create an _id field of the ObjectId type. 
+
+	There are other options, that is, generating an auto-incremental value for the _id filed.
+  	Those are: 
+	- based on a support collection 
+	- An optimistic loop.
+
+	Based on support Collection:
+	In this method, we use a separate collection that will keep the last used value in the sequence. 
+	To increment the sequence, first we should query the last used value.
+ 	After this, we can use the operator $inc to increment the value.
+	Code:
+
+
+*************************************************************************************************************
+Challenges in Data Modelling:
+
+The key challenge in data modeling is 
+	balancing the needs of the application	
+	the performance characteristics of the database engine, and 
+	the data retrieval patterns. 
+
+In Real world, the applications solves the problems by representing a relationship between documents. 
+MongoDB has its own way of representing these kind of relationships. In fact, there are two ways: 
+Embedded documents 
+References
+
+1. Working with Embedded Documents
+Through the use of subdocuments, we can build more complex and optimized data structures. 
+Thus, when we are modeling a document, we can choose to embed related data in one document. 
+The decision to embed data in one document is often related to the intention to get a better read performance, since with one query we can completely retrieve the information we need.
+Example: 		
+	Refer Embedded.txt
+
+The advantage of this kind of document is that, with a single query, we have all the data we need to present to the user. 
+The same applies to updates: with just one query, we can modify the content of this document. 
+Nevertheless, when we decide to embed data, we must ensure that the document does not exceed the BSON size limit of 16 MB.
+
+There is no rule when embedding data in MongoDB, but overall, we should observe: 
+Whether we have a one-to-one relationship between documents. 
+Whether we have a one-to-many relationship between documents, and whether the "many" part of the relationship is very dependent of the "one" part. This means, for instance, that every time we present the "one" part, we will also present the "many" part of the relationship.
+
+
+
+
+2. Working with References
+Normalization is a fundamental process to help build relational data models. 
+In order to minimize redundancy, in this process we divide larger tables into smaller ones and define relationships among them. 
+We can say that creating a reference in MongoDB is the way we have to "normalize" our model. 
+This reference will describe the relationship between documents. perform at least two queries to get the complete information you need.
+MongoDB does not support joins. This means that, even with the reference to another document, you must use more than one join to get the final value.
+
+Example-1:
+Refer Products with same Supplier.txt
+In this example, we have documents from the products collection. 
+We can see that, in the three products' instances, we have the same value for the supplier key. 
+Instead of this repetition of data, we could have two collections: products and suppliers, as we can see in the following example:	
+
+Example -2:	
+Refer, Products with same supplier -Emb.txt
+In this particular case, with a few products by the supplier, the choice to reference products based on the supplier is good. 
+However, if the scenario were the opposite, a better approach would be:
+Refer Products with same supplier -Ref.txt
+
+There is no rule for references using MongoDB, but overall, we should observe: 
+Whether we are duplicating the same information many times while embedding data (this shows poor reading performance)
+Whether we need to represent many-to-many relationships 
+Whether our model is a hierarchy
+
+If our model fits in one of the preceding scenarios, we should consider the use of references. 
+
+**************************************************************************************************************
+Atomic:
+
+Another important concept that will affect our decisions when designing a document is atomicity. 
+In MongoDB, operations are atomic at the document level. 
+This means that we can modify one document at a time. 
+Even if we have an operation that works in more than one document in a collection, this operation will happen in one document at a time. 
+Hence, when we decide to model a document with embedded data, we simply write operations, since all the data we need is in the same document. 
+This is opposed to what happens when we choose to reference data, where we require many write operations that are not atomic.
+
+
+**************************************************************************************************************
+Common Document Pattrens:
+
+This section will present you with patterns that illustrate when to embed or when to reference documents. 
+Until now, we have considered as a deciding factor: 
+	1. Whether consistency is the priority 
+	2. Whether read is the priority 
+	3. Whether write is the priority  
+	4. What update queries we will make 
+	5. Document growth
+
+***************************************************************************************************************
+Data models based on pattrens:
+1. One-to-one
+One-to-one relationships are simpler than the others. 
+Most of the time, we will map this relationship with embedded documents, especially if it is a "contains" relationship.
+
+With Reference Data
+	
+With Embedded data
+
+The advantage of representing the relationship with an embedded document is that the customer detail data is always available when we query a customer. 
+Thus, we can say that a customer's details do not make sense by themselves, only alongside the customer data.
+	
+	
+
+2. One-to-Many
+One-to-many relationships are more complex than one-to-one relationships. 
+In order to decide when to embed or to make references, we must consider the "many" side of the relationship. 
+If the many side should be displayed with its parents, then we should choose to embed the data; otherwise, we can use references on the parents.
+Reference Data: 	
+
+Embedded Data:		
+
+If, every time you want to display a customer's address, you also need to display the customer's name, then embedded documents are recommended.
+
+
+3. Many-to-Many
+Lets say, we have users and groups information as follows:
+	
+
+Now let's store the relationship in the User document:
+			
+
+Now let's store the relationship in the Groups document:
+	
+
+And, finally, let's store the relationship in both documents:
+					
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
