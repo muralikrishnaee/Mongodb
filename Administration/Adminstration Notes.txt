@@ -1,0 +1,356 @@
+
+Mongod Administration:
+
+Data & Importance of Disaster recovery plan:
+	Data is the core currency in today’s digital economy. 
+	According to industry research, 43% of companies that experience major data loss incidents are unable to reopen business operations.
+
+	Data loss incidents can take a variety of forms, but when it comes to database technology, they generally fall into two categories. 
+	The first category is 
+		catastrophic failure and the second is 
+		human error.
+
+
+	Catastrophic failure includes natural disasters and any other scenario that permanently destroy all the nodes in your production system. 
+	If you keep all your servers in the same data center, a fire that destroys them would qualify. 
+	This is typically what we imagine when we implement a backup strategy.
+
+	The reality is that human error or flawed process account for the vast majority of IT outages.
+	Humans introduce application bugs, deliberately hack into systems or accidentally delete data. 
+	A bad code release that corrupts some or all of the production data is an unfortunate but common example. 
+	In the case of human error, the errors introduced will propagate automatically to the replicas, often within seconds.
+
+Administration has three core categories:
+	1. Operation Strategies 
+		MongoDB Backup Methods - Describes approaches and considerations for backing up a MongoDB database.
+		Monitoring for MongoDB - An overview of monitoring tools, diagnostic strategies, and approaches to monitoring replica sets and 					 sharded clusters.
+		Run-time Database Configuration - Outlines common MongoDB configurations and examples of best-practice configurations for 								  common use cases.
+	
+	2. Data Management
+		Data Center Awareness - allow application developers and database administrators to configure their deployments to be more data 					center aware or allow operational and location-based separation.
+
+		Expire Data from Collections by Setting TTL - TTL collections make it possible to automatically remove data from a collection based 		on the value of a timestamp and are useful for managing data like machine generated event data that are only useful for a 				limited period of time.
+	3. Optimization Strategies 
+		
+
+********************************************************************************************
+There are three main approaches for backing up MongoDB:
+
+	mongodump, a utility bundled with the MongoDB database
+	Filesystem snapshots, such as those provided by Linux LVM or AWS EBS
+	MongoDB Management Service (MMS), a fully managed, cloud service that provides continuous backup for MongoDB 
+	(also available as on-prem software with a MongoDB subscription)
+
+Backup Strategy #1: 
+mongodump
+mongodump is a tool bundled with MongoDB that performs a backup of the data in MongoDB. 
+mongodump may be used to dump an entire database, collection, or result of a query. 
+mongodump can produce a consistent snapshot of the data by dumping the oplog. 
+You can then use the mongorestore utility to restore the data to a new or existing database. 
+mongorestore will import content from the BSON database dumps produced by mongodump and replay the oplog.
+
+mongodump is a straightforward approach and has the benefit of producing backups that can be filtered based on your specific needs. 
+While mongodump is sufficient for small deployments, it is not appropriate for larger systems. 
+mongodump exerts too much load to be a truly scalable solution. 
+It is not an incremental approach, so it requires a complete dump at each snapshot point, which is resource-intensive. 
+As your system grows, you should evaluate lower impact solutions such as filesystem snapshots or MMS.
+
+In addition, while the complexity of deploying mongodump for small configurations is fairly low, the complexity of deploying mongodump in large sharded systems can be significant.
+
+Backup Strategy #2: 
+Copying the Underlying Files
+You can back up MongoDB by copying the underlying files that the database processes uses to store data. 
+To obtain a consistent snapshot of the database, you must either stop all writes to the database and use standard file system copy tools, or create a snapshot of the entire file system, if your volume manager supports it.
+
+For example, Linux LVM quickly and efficiently creates a consistent snapshot of the file system that can be copied for backup and restore purposes. 
+To ensure that the snapshot is logically consistent, you must have journaling enabled within MongoDB.
+
+Because backups are taken at the storage level, filesystem snapshots can be a more efficient approach than mongodump for taking full backups and restoring them. 
+However, unlike mongodump, it is a more coarse approach in that you don’t have the flexibility to target specific databases or collections in your backup. This may result in large backup files, which in turn may result in long-running backup operations.
+
+To implement filesystem snapshots requires ongoing maintenance as your system evolves and becomes more complex. 
+To coordinate backups across multiple replica sets, particularly in a sharded system, requires devops expertise to ensure consistency across the various components.
+
+
+Backup Strategy #3: 
+MongoDB Management Service (MMS)
+MongoDB Management Service provides continuous, online backup for MongoDB as a fully managed service. 
+You install the Backup Agent in your environment, which conducts an initial sync to MongoDB’s secure and redundant datacenters. 
+After the initial sync, MMS streams encrypted and compressed MongoDB oplog data to MMS so that you have a continuous backup.
+
+By default, MMS takes snapshots every 6 hours and oplog data is retained for 24 hours. 
+The snapshot schedule and retention policy can be configured to meet your requirements. 
+You also have the flexibility to exclude non-mission critical databases and collections.
+
+For replica sets, a custom, point-in-time snapshot can be restored for any moment in the last 24 hours. 
+For sharded system, MMS produces a consistent snapshot of the cluster every 6 hours. 
+You also have the option of using checkpoints for more granular restores of sharded clusters.
+
+Because MMS reads only the oplog, the ongoing performance impact is minimal, similar to that of adding an additional node to the replica set.
+
+In addition to the cloud-based service, MMS is available as on-prem software as part of a MongoDB Standard or Enterprise Subscription.
+
+
+*************** Lab *******************
+1. Mongodump
+	
+mongodump
+mongodump --out "C:\Users\Lenovo\Desktop\Edureka\Dump"
+mongodump --out "C:\Users\Lenovo\Desktop\Edureka\Dump" -d admin
+mongodump --out "C:\Users\Lenovo\Desktop\Edureka\Dump" -d crud -c persons --query "{gender:\"M\"}"
+mongodump --out "C:\Users\Lenovo\Desktop\Edureka\Dump" -d crud -c persons --query "{yearOfBirth:  { $gte: 1980 }}"
+
+2. MongoRestore
+mongorestore --drop -d <database-name> <dir-of-backup-files>
+	--drop Drop is necessary if you are replacing an existing db
+	-d <database-name> The name of the database to create/replace
+	<dir-of-backup-files> For some reason this is necessary even if it's the current directory
+
+mongorestore -d newcrud C:\Users\Lenovo\Desktop\Edureka\Dump\crud\persons.bson
+mongorestore -drop -d newcrud C:\Users\Lenovo\Desktop\Edureka\Dump\crud\temp.bson
+
+
+**************************************************************************************************
+Monitoring for MongoDB:
+mongostat utility provides a quick overview about your mongodb server instance. 
+If you are running on a single mongod instance, it will show details about that instance. 
+If you are working on a shared cluster environment for mongodb then this command will show details about “mongos” instance.
+
+“mongostat” command is very much similar to “vmstat” command on linux server. 
+Linux server command give you details about processes which are currently running on Linux environment. 
+But mongostat command give you details about queries execution on mongod or mongos instance which may be connected to an application.
+
+If you are running only a single instance of mongodb by using “mongod” on local machine and default port is 27017, then you just need to type “mongostat” 
+and press enter. Or you can just click exe file and it will start.
+
+In case you are running mongodb in a cluster where multiple mongod/mongos instance are running then you have to provide host name with port number with mongostat. 
+
+getmore:  This column shows that how many times “getmore” operation is executed in one second time frame. 
+command: This column shows number of commands executed on the server in 1 second time frame.
+flushes: This column shows, how many times data was flused to disk in 1 second time interval. As per default setting of MongoDB, it writes data to disk in every 60 seconds. 
+mapped: mapped column shows amount of memory used by mongo process to particular database. It is as same as the size of database.
+vsize(Virtual size): vsize column represents virtual memory allocated to entire mongod process. 
+Typically its value is more than double of mapped memory, especially when journaling is enabled.
+res (Resident Memory): Physical memory used by mongo.
+
+faults: This column shows you the number of Linux page faults per second. 
+As name describes that this is one kind of problem so these numbers should be minimum. 
+Fault occurs when Mongo accesses something that is mapped to the virtual address space but not in physical memory.
+3
+
+qr|qw: 
+This column shows queued-up reads and writes that are waiting for the chance to be executed. 
+If you run mongostat on an environment and you see that numbers of qr|qw columns are so high, It means read/writes operations has been performed more than mongo is configured to handle.
+
+ar|aw: 
+This column shows number of active clients.
+
+netIn and netOut:  network traffic in out of mongodb server within a given time frame.
+
+conn: Shows number of open connections.
+
+time:  time frame in which operations are performed.
+
+
+********************
+Mongotop provides a way to track the time taken by mongo server instance in read and write operations. 
+It provides statistics on a per-collection level.
+
+By default, mongotop returns values every second but you can customize it as per your need. 
+So if you don’t want to see time taken by read/write operations every second than you can provide time interval while running mongotop command.
+
+If you are running only a single instance of mongodb by using “mongod” on local machine and default port is 27107 then you just need to type “mongotop” on command prompt and press enter. 
+Or you can  just click on exe file and it will start. In this case it will give read-write operations time taken amount in every one second.
+
+In case you are running mongodb in a clustered environment where multiple mongod/mongos instance are running then you have to provide host name with port number with “mongotop” command. 
+It depends on your need that you want to pass multiple host names and their port or a single host name and its port.
+
+db.runCommand( { serverStatus: 1 } )
+db.serverStatus()
+
+
+
+************************************************************************
+Profiler:
+
+
+Enable Profiler on any database
+
+1) check existing profiler status
+      db.getProfilingLevel()
+      You will get 0,1 or 2
+
+2) set profiling for all operations
+      db.setProfilingLevel(2)
+      { "was" : 0, "slowms" : 100, "ok" : 1 }
+
+3) check ur profiling state again,
+      db.getProfilingLevel()
+
+
+First, you must set up your profiling, specifying what the log level that you want. 
+The 3 options are:
+++
+0 - logger off
+1 - log slow queries
+2 - log all queries
+
+db.system.profile.find( { ns:/<db>.<collection>/ } ).sort( { ts: 1 } );
+You do this by running your mongod deamon with the --profile options:
+mongod --profile 2 --slowms 20
+
+With this, the logs will be written to the system.profile collection, on which you can perform queries as follows:
+
+find all logs in some collection, ordering by ascending timestamp:
+db.system.profile.find( { ns:/<db>.<collection>/ } ).sort( { ts: 1 } );
+
+looking for logs of queries with more than 5 milliseconds:
+db.system.profile.find( {millis : { $gt : 5 } } ).sort( { ts: 1} );
+
+*****************************************************************************************************
+Locking Performance
+MongoDB uses a locking system to ensure data set consistency. 
+If certain operations are long-running or a queue forms, performance will degrade as requests and operations wait for the lock.
+
+Lock-related slowdowns can be intermittent. 
+To see if the lock has been affecting your performance, refer to the locks section and the globalLock section of the serverStatus output.
+
+Dividing locks.timeAcquiringMicros by locks.acquireWaitCount can give an approximate average wait time for a particular lock mode.
+locks.deadlockCount provide the number of times the lock acquisitions encountered deadlocks.
+
+If globalLock.currentQueue.total is consistently high, then there is a chance that a large number of requests are waiting for a lock. 
+This indicates a possible concurrency issue that may be affecting performance.
+
+If globalLock.totalTime is high relative to uptime, the database has existed in a lock state for a significant amount of time.
+
+*************************************************************************************************
+Memory and the MMAPv1 Storage Engine
+Memory Use
+With the MMAPv1 storage engine, MongoDB uses memory-mapped files to store data. 
+Given a data set of sufficient size, the mongod process will allocate all available memory on the system for its use.
+
+The memory usage statuses metrics of the serverStatus output can provide insight into MongoDB’s memory use.
+
+The mem.resident field provides the amount of resident memory in use. 
+If this exceeds the amount of system memory and there is a significant amount of data on disk that isn’t in RAM, you may have exceeded the capacity of your system.
+
+You can inspect mem.mapped to check the amount of mapped memory that mongod is using. If this value is greater than the amount of system memory, some operations will require a page faults to read data from disk.
+
+***************************************************************************************************
+Number of Connections
+In some cases, the number of connections between the applications and the database can overwhelm the ability of the server to handle requests. 
+The following fields in the serverStatus document can provide insight:
+
+connections is a container for the following two fields:
+connections.current the total number of current clients connected to the database instance.
+connections.available the total number of unused connections available for new clients.
+
+For read-heavy applications, increase the size of your replica set and distribute read operations to secondary members.
+
+For write-heavy applications, deploy sharding and add one or more shards to a sharded cluster to distribute load among mongod instances.
+
+Spikes in the number of connections can also be the result of application or driver errors. 
+All of the officially supported MongoDB drivers implement connection pooling, which allows clients to use and reuse connections more efficiently. 
+Extremely high numbers of connections, particularly without corresponding workload is often indicative of a driver or other configuration error.
+
+
+***********************************************************************************************
+Page Faults
+With the MMAPv1 storage engine, page faults can occur as MongoDB reads from or writes data to parts of its data files that are not currently located in physical memory. 
+In contrast, operating system page faults happen when physical memory is exhausted and pages of physical memory are swapped to disk.
+
+MongoDB reports its triggered page faults as the total number of page faults in one second. 
+To check for page faults, see the extra_info.page_faults value in the serverStatus output.
+
+Rapid increases in the MongoDB page fault counter may indicate that the server has too little physical memory. Page faults also can occur while accessing large data sets or scanning an entire collection.
+
+A single page fault completes quickly and is not problematic. However, in aggregate, large volumes of page faults typically indicate that MongoDB is reading too much data from disk.
+
+MongoDB can often “yield” read locks after a page fault, allowing other database processes to read while mongod loads the next page into memory. Yielding the read lock following a page fault improves concurrency, and also improves overall throughput in high volume systems.
+
+Increasing the amount of RAM accessible to MongoDB may help reduce the frequency of page faults. If this is not possible, you may want to consider deploying a sharded cluster or adding shards to your deployment to distribute load among mongod instances.
+
+
+********************************************************************************************
+Export MongoDB data to CSV, TSV or JSON files.
+options:
+  -h [ --host ] arg         mongo host to connect to ( <set name>/s1,s2 for
+  -u [ --username ] arg     username
+  -p [ --password ] arg     password
+  -d [ --db ] arg           database to use
+  -c [ --collection ] arg   collection to use (some commands)
+  -q [ --query ] arg        query filter, as a JSON string
+  -o [ --out ] arg          output file; if not specified, stdout is used
+
+
+
+1.  mongoexport -d crud -c persons -o C:\Users\Lenovo\Desktop\Edureka\persons_new.json
+
+2.  mongoexport -d crud -c persons -q "{gender:\"M\"}" --out C:\Users\Lenovo\Desktop\Edureka\persons_new.json
+
+3.  mongoexport -d crud -c persons -q "{gender:\"M\"}" --sort "{yearOfBirth:1}" --out C:\Users\Lenovo\Desktop\Edureka\persons_new.json
+
+db.test.insert({ "_id" : ObjectId("51f0188846a64a1ed98fde7c"), "a" : 1 })
+db.test.insert({ "_id" : ObjectId("520e61b0c6646578e3661b59"), "a" : 1, "b" : 2 })
+db.test.insert({ "_id" : ObjectId("520e642bb7fa4ea22d6b1871"), "a" : 2, "b" : 3, "c" : 5 })
+db.test.insert({ "_id" : ObjectId("520e6431b7fa4ea22d6b1872"), "a" : 3, "b" : 3, "c" : 6 })
+db.test.insert({ "_id" : ObjectId("520e6445b7fa4ea22d6b1873"), "a" : 5, "b" : 6, "c" : 8 })
+
+4.  mongoexport --db crud --collection test --type csv --fields name,address --out C:\Users\Lenovo\Desktop\Edureka\contacts.csv
+
+MongoImort:
+mongoimport --db users --type csv --headerline --file C:\Users\Lenovo\Desktop\Edureka\contacts.csv
+mongoimport  -d crud -c persons1 --file C:\Users\Lenovo\Desktop\Edureka\persons_new.json
+
+
+Expire Data on TTL
+------------------
+
+- create an TTL index on a BSON date-type field
+- specify a non zero value in expireAfterSeconds field
+- document will be deleted after the specified time
+- mongodb runs a thread every 60 sec to delete the docs from the data file
+
+db.log_events.ensureIndex( { "createdAt": 1 }, { expireAfterSeconds: 3600 } )
+
+db.log_events.insert( {
+	"createdAt": new Date(),
+	"logEvent": 2,
+	"logMessage": "Success!"
+} )
+
+-- to set expirtion at specific clock time
+db.log_events.ensureIndex( { "expireAt": 1 }, { expireAfterSeconds: 0 } )
+
+db.log_events.insert( {
+	"expireAt": new Date('July 22, 2013 14:00:00'),
+	"logEvent": 2,
+	"logMessage": "Success!"
+} )
+
+
+Optimization Strategies
+-----------------------
+
+Evaluate Performance of Current Operations - db.currentOp(), DB profiling, explain()
+Optimize Query Performance - index, projection, hint, $inc, 
+Design Note 
+- all the data modeling concepts and patterns,
+- GriFS for large
+- proper shard key
+- single atomic transaction
+- odd number of replica set
+
+
+
+ObjectId is a 12-byte BSON type, constructed using:
+? a 4-byte value representing the seconds since the Unix epoch,
+? a 3-byte machine identifier,
+? a 2-byte process id, and
+? a 3-byte counter, starting with a random value.
+
+
+
+
+
+
