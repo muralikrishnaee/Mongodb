@@ -1,0 +1,286 @@
+Indexes:
+Indexes support the efficient execution of queries in MongoDB. 
+Without indexes, MongoDB must perform a collection scan, i.e. scan every document in a collection, to select those documents that match the query statement. 
+If an appropriate index exists for a query, MongoDB can use the index to limit the number of documents it must inspect.
+
+Indexes are special data structures, that store a small portion of the collection’s data set in an easy to traverse form. 
+The index stores the value of a specific field or set of fields, ordered by the value of the field. 
+The ordering of the index entries supports efficient equality matches and range-based query operations. 
+In addition, MongoDB can return sorted results by using the ordering in the index.
+
+***************************************************************
+db=db.getSiblingDB("school");
+db.students.drop();
+types = ['exam', 'quiz', 'homework', 'assignment'];
+// 1 million students
+for (i = 0; i < 500000; i++) {
+
+    // take 10 classes
+    for (class_counter = 0; class_counter < 10; class_counter ++) {
+	scores = []
+	    // and each class has 4 grades
+	    for (j = 0; j < 4; j++) {
+		scores.push({'type':types[j],'score':Math.random()*100});
+	    }
+
+	// there are 500 different classes that they can take
+	class_id = Math.floor(Math.random()*501); // get a class id between 0 and 500
+
+	record = {'student_id':i, 'scores':scores, 'class_id':class_id};
+	db.students.insert(record);
+
+    }
+
+}
+*********************************************************************	    
+
+* Default _id Index;
+MongoDB creates a unique index on the _id field during the creation of a collection. 
+The _id index prevents clients from inserting two documents with the same value for the _id field. 
+You cannot drop this index on the _id field.
+
+*********************************************************************	    
+
+* Simple Index:
+db.collection.createIndex({field:1})
+db.students.createIndex({student_id:1})
+db.students.getIndexes()
+db.students.explain().find({student_id:10000})
+db.students.explain(true).find({student_id:10000})
+
+*********************************************************************	    
+
+* Compound Index
+MongoDB supports compound indexes, where a single index structure holds references to multiple fields within a collection’s documents. 
+MongoDB imposes a limit of 31 fields for any compound index.
+
+db.students.createIndex({student_id:1, class_id:1})
+
+*********************************************************************	    
+
+* MultiKey Index
+To index a field that holds an array value, MongoDB creates an index key for each element in the array. 
+These multikey indexes support efficient queries against array fields. 
+Multikey indexes can be constructed over arrays that hold both scalar values  (e.g. strings, numbers) and nested documents.
+
+db.foo.insert({a:1, b:2})
+db.foo.createIndex({a:1,b:1})
+db.foo.explain().find({a:1})
+
+db.foo.insert({a:1, b:2})
+db.foo.insert({a:1, b:[1,4,5]})
+db.foo.insert({a:[3,6,7], b:4})
+db.foo.insert({a:[3,8,9], b:[3,0,7]})
+
+*********************************************************************	    
+
+* DOT Notation:
+db.students.createIndex({"scores.score":1})
+
+
+ db.students.find({"scores.score":{$gt:99}})
+ 
+ db.students.find({"scores":{$elemMatch: {"type":"exam", "score":{$gt:99}}}})
+
+ db.students.explain().find({"scores":{$elemMatch: {"type":"exam", "score":{$gt:99}}}})
+
+*********************************************************************	    
+
+* Index Creation Options:
+* Unique
+A unique index ensures that the indexed fields do not store duplicate values; i.e. enforces uniqueness for the indexed fields. 
+By default, MongoDB creates a unique index on the _id field during the creation of a collection.
+
+Create a Unique Index
+To create a unique index, use the db.collection.createIndex() method with the unique option set to true.
+db.collection.createIndex( <key and index type specification>, { unique: true } )
+
+
+db.stuff.insert({thing:"apple"})
+db.stuff.insert({thing:"Orange"})
+db.stuff.insert({thing:"apple"})
+
+db.stuff.dropIndex("thing_1")
+
+db.stuff.createIndex({thing:1},{unique:true})
+
+db.stuff.remove({thing:"apple"},{justOne:true})
+db.stuff.remove({thing:"apple"},{justOne:true})
+ 
+ 
+* Sparse
+The index is “sparse” because it does not include all documents of a collection.
+Sparse indexes only contain entries for documents that have the indexed field, even if the index field contains a null value.
+The index does not index documents that do not include the score field.
+
+db.employee.insert({empid:1, name:"a", age:32})
+db.employee.insert({empid:2, name:"b", age:31})
+db.employee.insert({empid:3, name:"c"})
+db.employee.insert({empid:4, name:"d"})
+
+db.employee.createIndex({empid:1},{unique:true})
+db.employee.createIndex({age:1},{unique:true})
+db.employee.createIndex({age:1},{unique:true, sparse:true})
+
+db.employee.find().sort({empid:1})
+
+* BackGround
+db.students.createIndex({"scores.score":1},{background:true})
+
+* TTL Indexes:
+TTL indexes are special single-field indexes that MongoDB can use to automatically remove documents from a collection 
+after a certain amount of time or at a specific clock time.
+
+db.log_events.insert( {
+   "expireAt": new Date('July 22, 2013 14:00:00'),
+   "logEvent": 2,
+   "logMessage": "Success!"
+} )
+
+db.log_events.createIndex( { "expireAt": 1 }, { expireAfterSeconds: 1 } )
+
+db.data.drop()
+db.data.save({scheduledDate: 0})
+db.data.save({scheduledDate: new Date()})
+db.data.save({scheduledDate: new Date()})
+db.data.createIndex( { "scheduledDate": 1 }, { expireAfterSeconds:1} )
+
+* Hashed Indexes
+Hashed indexes maintain entries with hashes of the values of the indexed field.
+Hashed indexes support sharding using hashed shard keys. 
+Using a hashed shard key to shard a collection results in a more random distribution of data. 
+
+Hashing Function:
+Hashed indexes use a hashing function to compute the hash of the value of the index field. 
+The hashing function collapses embedded documents and computes the hash for the entire value but does not support multi-key (i.e. arrays) indexes.
+MongoDB automatically computes the hashes when resolving queries using hashed indexes. 
+Applications do not need to compute hashes.
+
+db.collection.ensureIndex({'field':'hashed'})
+
+
+db.stuff.dropIndex("ratings_1")
+
+db.stuff.createIndex( { things: "hashed" } )
+db.stuff.explain().find( { things: "apple" } )
+
+Pros:
+Hashed indexes tend to be smaller than the scalar indexes because only a hash of the key is stored instead of the full key. 
+E.g. In a simple test with 100k documents, if we add hashed and scalar indexes on a string field – ‘fieldName’. 
+
+
+As shown below, the hashed index tends to be considerably smaller than the scalar indexes:
+"indexSizes" : {
+        "_id_" : 811008,
+        "firstName_1" : 4415488,
+        "firstName_hashed" : 1490944
+}
+
+Cons:
+Does not support range queries. If you run a range query on a hashed index it will result in a index scan.
+
+
+* How large your index size is?
+db.students.totalIndexSize()
+
+
+*********************************************************************
+ 
+* Text Indexes
+1. MongoDB supports query operations that perform a text search of string content. 
+2. To perform text search, MongoDB uses a text index and the $text operator.
+
+Base Data:
+db.stores.insert(
+   [
+     { _id: 1, name: "Java Hut", description: "Coffee and cakes" },
+     { _id: 2, name: "Burger Buns", description: "Gourmet hamburgers" },
+     { _id: 3, name: "Coffee Shop", description: "Just coffee" },
+     { _id: 4, name: "Clothes Clothes Clothes", description: "Discount clothing" },
+     { _id: 5, name: "Java Shopping", description: "Indonesian goods" }
+   ]
+)
+
+To perform text search queries, you must have a text index on your collection. 
+A collection can only have one text search index, but that index can cover multiple fields.
+
+db.stores.createIndex( { name: "text", description: "text" } )
+
+$text Operator:
+Use the $text query operator to perform text searches on a collection with a text index.
+
+search for java coffee shop
+db.stores.find( { $text: { $search: "java coffee shop" } } )
+
+Search either java or coffee shop
+db.stores.find( { $text: { $search: "java \"coffee shop\"" } } )
+
+To find all stores containing “java” or “shop” but not “coffee”
+db.stores.find( { $text: { $search: "java shop -coffee" } } )
+
+*********************************************************************************************************************
+
+
+* Geospatial Indexes
+
+2d Index:
+Use a 2d index for data stored as points on a two-dimensional plane. 
+The 2d index is intended for legacy coordinate pairs used in MongoDB 2.2 and earlier.
+Use a 2d index if:
+	your database has legacy legacy coordinate pairs from MongoDB 2.2 or earlier, and
+	you do not intend to store any location data as GeoJSON objects.
+
+2dsphere:
+2dsphere indexes support queries that calculate geometries on an earth-like sphere.	
+https://docs.mongodb.com/manual/reference/geojson/
+https://docs.mongodb.com/manual/reference/operator/query-geospatial/
+
+
+Determine the user’s current neighborhood using $geoIntersects,
+Show the number of restaurants in that neighborhood using $geoWithin, and
+Find restaurants within a specified distance of the user using $nearSphere.
+
+mongoimport -d geo -c restaurants --file "C:\Users\Lenovo\Desktop\Edureka\Module 6 - Aggregation & Indexes\restaurants.json"
+mongoimport -d geo -c neighborhoods --file "C:\Users\Lenovo\Desktop\Edureka\Module 6 - Aggregation & Indexes\neighborhoods.json"
+db.restaurants.findOne()
+db.neighborhoods.findOne()
+
+db.restaurants.createIndex({ location: "2dsphere" })
+db.neighborhoods.createIndex({ geometry: "2dsphere" })
+
+
+1. Find the Current Neighborhood
+Assuming the user’s mobile device can give a reasonably accurate location for the user, 
+it is simple to find the user’s current neighborhood with $geoIntersects.
+
+Suppose the user is located at -73.93414657 longitude and 40.82302903 latitude. 
+
+To find the current neighborhood, you will specify a point using the special $geometry field in GeoJSON format:
+db.neighborhoods.findOne({ geometry: { $geoIntersects: { $geometry: { type: "Point", coordinates: [ -73.93414657, 40.82302903 ] } } } })
+
+
+2. Find all Restaurants in the Neighborhood
+var neighborhood = db.neighborhoods.findOne( { geometry: { $geoIntersects: { $geometry: { type: "Point", coordinates: [ -73.93414657, 40.82302903 ] } } } } )
+db.restaurants.find( { location: { $geoWithin: { $geometry: neighborhood.geometry } } } ).count()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
