@@ -1,1 +1,209 @@
+1. Create a database 
+	use dbname
+2. Create a Collection
+	db.createCollection("name", {capped: true, size: 100000, max: 1000})
+	db.createCollection("name")
+	db.isCapped()
 
+	db.collection_name.insert({stdid: 101})
+
+3. View collections present in a database
+	show collections
+
+4. Read a collection / Find the data in the collection
+	db.collection_name.find()
+	db.collection_name.findOne()
+	db.collection_name.pretty()
+
+5. Insert the documents in a collections
+	db.collection_name.insert()
+
+**************************** READ Operations *****************************
+1. Find all female employees
+ db.persons.find({"gender":"F"})
+ db.persons.find({"gender":"F"}).pretty()
+
+2. Count of all female employees
+ db.persons.find({"gender":"F"}).pretty()
+
+3. Display names of all female employees
+ db.persons.find({"gender":"F"},{name:1})
+ db.persons.find({"gender":"F"},{name:1, _id:0})
+ db.persons.find({"gender":"F"},{name:1, _id:0}) 
+
+4. Display first names of all female employees
+ db.persons.find({"gender":"F"},{"name.first":1, _id:0}) 
+ db.persons.find({"gender":"F"},{"name.last":1, _id:0}) 
+
+5. Display names and yearOfBirth for all the female employees
+ db.persons.find({"gender":"F"},{_id:0,name:1,yearOfBirth:1})
+
+6. Find names of all the persons
+ db.persons.find({},{_id:0,name:1})
+
+7. Find all people who are living in Mumbai or Jaipur
+ db.persons.find({"livesIn":{$in:["Mumbai","Jaipur"]}})
+ db.persons.find({$or:[{"livesIn":"Mumbai"},{"livesIn":"Jaipur"}]})
+
+8.Find names of all the people who were born before 1980
+ db.persons.find({"yearOfBirth":{$lt:1980}},{_id:0,name:1,yearOfBirth:1980})
+
+9. Find all the persons who are not living in Jaipur
+ db.persons.find({"livesIn":{$ne:"Jaipur"}},{_id:0,name:1,livesIn:1})
+
+10. Find all persons who have visited India, United States of America and Singapore
+ db.persons.find({"countriesVisited":{$all:["India", "United States of America","Singapore"]}})
+
+11. Find all persons who have visited Canada and United States of America.
+ db.persons.find({"countriesVisited":{$all:["India","United States of America"]}},{_id:0, countriesVisited:1})
+
+12. Find all persons whose first country visited is India
+ db.persons.find({"countriesVisited.0":"India"},{_id:0,countriesVisited:1}).pretty()
+
+13. Find all the persons whose first language is English
+ db.persons.find({"languages.0.name":"English"},{_id:0,languages:1}).pretty()
+
+14. Find all persons who either live in Mumbai or have visited India
+ db.persons.find({$or:[{"livesIn":"Mumbai"},{"countriesVisited":"India"}]},{_id:0,livesIn:1,countriesVisited:1}).pretty()
+
+15. Find all persons who have visited India or know Hindi
+ db.persons.find({$or:[{"countriesVisited":"India"},{"languages.name":"Hindi"}]},{_id:0,countriesVisited:1,"languages.name":1}).pretty()
+
+16. Find all persons who are fluent in English
+ db.persons.find({"languages":{$elemMatch:{"name":"English","proficiency":"Fluent"}}},{_id:0,languages:1}).pretty()
+
+17. Find all persons with fluency in English or Hindi
+db.persons.find({"languages":{$elemMatch:{"name":{$in:["Hindi","English"]},"proficiency":"Fluent"}}},{_id:0,languages:1}).pretty()
+
+18. Find all persons who have visited India and are fluent in Hindi
+ db.persons.find({$and:[{"countriesVisited":"India"},{"languages":{$elemMatch:{"name":"Hindi","proficiency":"Fluent"}}}]},{_id:0,countriesVisited:1,languages:1}).pretty()
+
+19. For all females, return their name and the first three countries visited by them
+ db.persons.find({"gender":"F"},{_id:0,countriesVisited:{$slice:3}}).pretty()
+
+20. Show all persons, sorted in ascending order of their year of birth
+ db.persons.find({},{yearOfBirth:1,_id:0}).sort({yearOfBirth:1})
+ db.persons.find({},{yearOfBirth:1,_id:0}).sort({yearOfBirth:-1})
+
+21. Show all persons, sorted by last name and then first name
+ db.persons.find({},{name:1,_id:0}).sort({"name.first":1, "name.last":-1}).pretty()
+
+22. Show all persons, sorted by last name and then first name and show only first 3 records
+ db.persons.find({},{name:1,_id:0}).sort({"name.first":1, "name.last":-1}).pretty().limit(3)
+
+23. Show persons, sorted by last name and then first name, limiting to 6-10th persons only
+ db.persons.find({},{name:1,_id:0}).sort({"name.first":1, "name.last":-1}).pretty().skip(5).limit(5)
+
+**************************** UPDATE Operations *****************************
+1. Add a new field called "Married" with a value "Y" for the record with first name as "Harish" and last name as "Chandra"
+  db.persons.update({$or:[{"name.first":"Harish"},{"name.last":"Chandra"}]},{$set:{"Married":"Y"}})
+
+2. Modify the filed "Married" to value "N" for the record with first name as "Harish" and last name as "Chandra"
+  db.persons.update({$or:[{"name.first":"Harish"},{"name.last":"Chandra"}]},{$set:{"Married":"N"}})
+
+3. Single record update
+   If the first countryvisted is India then set the natioanlity as "Indian"
+ db.persons.update({"countriesVisited.0":"India"},{$set:{"Nationality":"Indian"}})
+
+4. Mutli record update
+ db.persons.update({"countriesVisited.0":"India"},{$set:{"Nationality":"Indian"}},{multi:true})
+
+5. Remove a field from a document
+   Remove "Married" field from the document matching the first name as "Harish" and last name      as "Chandra"
+  db.persons.update({$or:[{"name.first":"Harish"},{"name.last":"Chandra"}]},{$unset:  {Married:1}})
+
+6. Renaming a field
+ db.persons.update({},{$rename:{"livesIn":"livesin"}},{multi:true})
+
+**************************** DELETE Operations ***********************************
+1. Remove all male employees
+db.persons.remove ( {gender: 'M'} )
+
+2. Remove the first matched male employee
+db.persons.remove ( {gender: 'M'}, 1 )
+
+3. Remove all documents from a collection
+db.persons.remove()
+
+3. Better remove a collection
+db.persons.drop()
+
+
+
+***************************************************************************
+Write Concern
+--------------
+db.temp.insert({"sno":"1"},{ writeConcern: { w:0 } })
+
+db.inventory.insert(
+    { sku: "abcdxyz", qty : 100, category: "Clothing" },
+    { writeConcern: { w: 0, j: true, wtimeout: 5000 } }
+)
+
+db.people.update(
+   { name: "Andy" },
+   {
+      name: "Andy",
+      rating: 1,
+      score: 1
+   },
+   { upsert: true }
+)
+
+*******************************************************************
+db.employee.insert( 
+    { 
+    "employee_id":1101, 
+    "name":"Prashanth", 
+    "sal":90000, 
+    "dob": new Date(1983,2,3,5,20), 
+    "department": 
+        [ 
+            'DB Amdin','DB Developer' 
+        ], 
+    "Location":"New York" 
+    });
+
+
+db.employee.save( 
+[ 
+{ 
+"employee_id":1102, 
+"name":"Jayaram", 
+"sal":95000, 
+"dob": new Date(1983,18,4,12,05), 
+"department":"Web Admin", 
+"Location":"New York" 
+}, 
+{ 
+"employee_id":1103, 
+"name":"Pravitha", 
+"sal":195000, 
+"dob": new Date(2015,07,06,11,22), 
+"department":['Health Science','Scientist'], 
+"Location":"NJ" 
+}, 
+{ 
+"employee_id":1104, 
+"name":"Prarthana", 
+"sal":295000, 
+"dob": new Date(2015,07,06,11,23), 
+"department":['Engineer','Pilot'], 
+"Location":"NJ" 
+}, 
+{
+"employee_id":1105, 
+"name":"Ambika", 
+"sal":80000, 
+"dob": new Date(1983,2,3,5,20), 
+"department":['DB Amdin','DB Developer'], 
+"Location":"Dallas" 
+}, 
+] 
+);
+
+db.employee.update({name: 'Prashan'},{$set: {sal: 100000}})
+
+db.employee.update({sal:{$gt:10000}},{$mul: {sal:10}},{multi:true})
+
+db.employee.update({name: 'Prayer'},{$set: {sal: 100000}},{upsert:true})
