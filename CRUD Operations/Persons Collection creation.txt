@@ -1,0 +1,170 @@
+db.persons.insert ( {
+	name: {first: 'Harish', last: 'Chandra'},
+	gender: 'M',
+	yearOfBirth: 1962,
+	livesIn: 'Mumbai',
+	countriesVisited: ['India', 'Singapore', 'Thailand', 'United Kingdom', 'Spain', 'Denmark', 'United States of America'],
+	languages: [
+		{name: 'Hindi', proficiency: 'Fluent'},
+		{name: 'English', proficiency: 'Fluent'},
+		{name: 'Sanskrit', proficiency: 'Intermediate'} ]
+} )
+
+db.persons.insert ( {
+	name: {first: 'Zoa', last: 'Hendrik'},
+	gender: 'F',
+	yearOfBirth: 1988,
+	livesIn: 'Barcelona',
+	countriesVisited: ['Spain', 'Denmark', 'France'],
+	languages: [
+		{name: 'Spanish', proficiency: 'Fluent'},
+		{name: 'Catalan', proficiency: 'Fluent'},
+		{name: 'English', proficiency: 'Intermediate'} ],
+	married: 'No'
+} )
+
+db.persons.insert ( {
+	name: {first: 'Narayan', last: 'Sundaram'},
+	gender: 'M',
+	yearOfBirth: 1960,
+	livesIn: 'Jaipur',
+	countriesVisited: ['India', 'United States of America', 'Netherlands', 'China'],
+	languages: [
+		{name: 'Tamil', proficiency: 'Fluent'},
+		{name: 'English', proficiency: 'Fluent'},
+		{name: 'Hindi', proficiency: 'Intermediate'},
+		{name: 'Chinese', proficiency: 'Intermediate'} ],
+	married: 'Yes'
+} )
+
+db.persons.insert ( {
+	name: {first: 'Shailesh', last: 'Sharma'},
+	gender: 'M',
+	yearOfBirth: 1962,
+	livesIn: 'Singapore',
+	countriesVisited: ['India', 'Singapore', 'China', 'Taiwan', 'United States of America', 'Sri Lanka', 'Mayalsia', 'Australia'],
+	languages: [
+		{name: 'Hindi', proficiency: 'Fluent'},
+		{name: 'English', proficiency: 'Fluent'} ]
+} ) 
+
+db.persons.insert ( {
+	name: {first: 'Mark', last: 'Smith'},
+	gender: 'M',
+	livesIn: 'Chicago',
+	countriesVisited: ['United States of America', 'Canada', 'France', 'Spain', 'India', 'Australia'],
+	languages: [ {name: 'English', proficiency: 'Fluent'} ]
+} )
+
+db.persons.insert ( {
+	name: {first: 'Rita', last: 'Chauhan'},
+	gender: 'F',
+	yearOfBirth: 1989,
+	livesIn: 'Mumbai',
+	countriesVisited: ['India'],
+	languages: [
+		{name: 'Hindi', proficiency: 'Fluent'},
+		{name: 'English', proficiency: 'Fluent'} ],
+	married: 'No'
+} )
+
+db.persons.insert ( {
+	name: {first: 'Liza', last: 'Bordelon'},
+	gender: 'F',
+	yearOfBirth: 1971,
+	livesIn: 'Minneapolis',
+	countriesVisited: ['United States of America', 'Canada'],
+	languages: [
+		{name: 'English', proficiency: 'Fluent'},
+		{name: 'French', proficiency: 'Fluent'},
+		{name: 'German', proficiency: 'Intermediate'},
+		{name: 'Greek', proficiency: 'Intermediate'},
+		{name: 'Latin', proficiency: 'Intermediate'},
+		{name: 'Sanskrit', proficiency: 'Beginner'} ]
+} )
+
+db.persons.insert ( {
+	name: {first: 'Jenny', last: 'Jones'},
+	gender: 'F',
+	yearOfBirth: 1985,
+	livesIn: 'Oxford',
+	countriesVisited: ['United Kingdom'],
+	languages: [ {name: 'English', proficiency: 'Fluent'} ],
+	married: 'No'
+} )
+
+db.persons.insert ( {
+	name: {first: 'Sapna', last: 'Chetri'},
+	gender: 'F',
+	yearOfBirth: 1989,
+	livesIn: 'Siliguri',
+	countriesVisited: ['India'],
+	languages: [
+		{name: 'Nepali', proficiency: 'Fluent'},
+		{name: 'Hindi', proficiency: 'Fluent'},
+		{name: 'English', proficiency: 'Intermediate'} ],
+	married: 'No'
+} )
+
+db.persons.insert ( {
+	name: {first: 'Jenny', middle: 'H', last: 'Jones'},
+	gender: 'F',
+	yearOfBirth: 1988,
+	livesIn: 'London',
+	countriesVisited: ['United Kingdom'],
+	languages: [ {name: 'English', proficiency: 'Fluent'} ],
+	married: 'Yes'
+} )
+
+db.persons.insert ( {
+	name: {first: 'Lakhpa', last: 'Sherpa'},
+	gender: 'M',
+	yearOfBirth: 1989,
+	livesIn: 'Gangtok',
+	countriesVisited: ['India'],
+	languages: [
+		{name: 'Nepali', proficiency: 'Fluent'},
+		{name: 'English', proficiency: 'Fluent'},
+		{name: 'Hindi', proficiency: 'Intermediate'} ],
+	married: 'No'
+} )
+
+db.persons.insert ( {
+	name: {first: 'Anita', last: 'Gogia'},
+	gender: 'F',
+	yearOfBirth: 1965,
+	livesIn: 'New Delhi',
+	countriesVisited: ['India', 'United Kingdom', 'Canada', 'United States of America'],
+	languages: [
+		{name: 'Hindi', proficiency: 'Fluent'},
+		{name: 'Punjabi', proficiency: 'Fluent'},
+		{name: 'English', proficiency: 'Fluent'} ],
+	married: 'Yes'
+} )
+
+db.persons.insert ( {
+	name: {first: 'Neeharika', last: 'Chauhan'},
+	gender: 'F',
+	yearOfBirth: 1988,
+	livesIn: 'Jaipur',
+	countriesVisited: ['India'],
+	languages: [
+		{name: 'Hindi', proficiency: 'Fluent'},
+		{name: 'English', proficiency: 'Intermediate'} ],
+	married: 'No'
+} )
+
+db.persons.insert ( {
+	name: {first: 'Nancy', last: 'Karin'},
+	gender: 'F',
+	yearOfBirth: 1992,
+	livesIn: 'Montreal',
+	countriesVisited: ['Canada', 'United States of America'],
+	languages: [
+		{name: 'English', proficiency: 'Fluent'},
+		{name: 'French', proficiency: 'Fluent'},
+		{name: 'German', proficiency: 'Intermediate'},
+		{name: 'Greek', proficiency: 'Intermediate'},
+		{name: 'Latin', proficiency: 'Intermediate'},
+		{name: 'Sanskrit', proficiency: 'Beginner'} ]
+} )
