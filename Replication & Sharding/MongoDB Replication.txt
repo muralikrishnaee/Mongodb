@@ -1,0 +1,198 @@
+Replication Procedure for PSS:
+
+* Start the servers
+start /b mongod --replSet rs --dbpath rs1 --port 37017 --logpath logs\rs1.log --logappend 
+start /b mongod --replSet rs --dbpath rs2 --port 37018 --logpath logs\rs2.log --logappend 
+start /b mongod --replSet rs --dbpath rs3 --port 37019 --logpath logs\rs3.log --logappend 
+
+* Connect to any one of the Server using mongo shell
+mongo --port 37017
+
+* Check the replication status
+rs.status()
+
+* Initiate the replication
+rs.initiate()
+
+* Check the replication status
+rs.status()
+rs.isMaster()
+rs.conf()
+
+* create one database and collection 
+use replica
+for(var i=1;i<=1000;i++)db.repltest.insert({empid:i, empname:"Murali"})
+db.repltest.find().count()
+db.repltest.findOne()
+
+* Add remaining members to the replica set 
+rs.add("localhost:37018")
+rs.add("localhost:37019")
+
+* Check the replication status
+rs.status()
+rs.isMaster()
+rs.conf()
+
+* Open another command prompt and connect any other server
+mongo --port 37018
+
+Try show dbs 
+You will not allowed as we are not in Master-Slave config. 
+
+* enable master-slave config 
+rs.slaveOk()
+
+Then try the crud operations.
+
+* Repeat the same for the remaining nodes as well. 
+
+*************************************************************************************************************************
+
+Replica Set Members:
+*************
+Priority:
+1. The priority settings of replica set members affect both the timing and the outcome of elections for primary. 
+2. Higher-priority members are more likely to call elections, and are more likely to win. 
+3. Use this setting to ensure that some members are more likely to become primary and that others can never become primary.
+4. The value of the member’s priority setting determines the member’s priority in elections. The higher the number, the higher the priority.
+
+The value of priority can be any floating point (i.e. decimal) number between 0 and 1000. 
+The default value for the priority field is 1.
+
+To block a member from seeking election as primary, assign it a priority of 0. 
+Hidden members and delayed members have priority set to 0.
+Non-voting members must have priority of 0.
+Members with priority greater than 0 cannot have 0 votes.
+
+
+Procedure to change the priority settings:
+1. Copy the replica set configuration to a variable.
+cfg = rs.conf()
+
+2. Change each member’s priority value.
+cfg.members[0].priority = 0.5
+cfg.members[1].priority = 2
+cfg.members[2].priority = 2
+
+3. Reconfigure the replcation
+rs.reconfig(cfg)
+
+rs.conf()
+Check the status of each members.
+
+
+*********************************************
+Configure Arbiter Replica Set Member
+An arbiter does not have a copy of data set and cannot become a primary. 
+Replica sets may have arbiters to add a vote in elections for primary. 
+rs.addArbiter("XXXX")
+
+********************
+Prevent Secondary from Becoming Primary:
+Priority - 0 members:
+
+1. cfg = rs.conf()
+2. cfg.members[2].priority = 0
+3. reconfig(cfg)
+
+
+A priority 0 member is a member that cannot become primary and cannot trigger elections.
+They maintains a copy of the data set, accept read operations, and vote in elections.
+Configure a secondary to have priority 0 to prevent it from becoming primary, which is particularly useful in multi-data center deployments.
+
+For example, in the following diagram, one data center hosts the primary and a secondary. A second data center hosts a secondary with priority 0. Only the members in data center 1 can become primary.
+
+********************************************
+Hidden Replica Set Members:
+A hidden member maintains a copy of the primary’s data set but is invisible to client applications. 
+Hidden members are good for workloads with different usage patterns from the other members in the replica set. 
+Hidden members must always be priority 0 members and so cannot become primary. 
+The db.isMaster() method does not display hidden members. 
+Hidden members, however, may vote in elections.
+
+
+1. cfg = rs.conf()
+2. cfg.members[2].priority = 0
+3. cfg.members[2].hidden = 0
+4. reconfig(cfg)
+
+**********************************************
+Delayed Replica set members
+
+The following example sets a 1-hour delay on a secondary member currently at the index 0 in the members array.
+cfg = rs.conf()
+cfg.members[0].priority = 0
+cfg.members[0].hidden = true
+cfg.members[0].slaveDelay = 3600
+rs.reconfig(cfg)
+
+*********************************************
+Configure Non-Voting Replica Set Member
+The following example configures the fourth, fifth, and sixth replica set members to be non-voting members.
+
+cfg.members[3].votes = 0;
+cfg.members[3].priority = 0;
+cfg.members[4].votes = 0
+cfg.members[4].priority = 0;
+cfg.members[5].votes = 0
+cfg.members[5].priority = 0;
+
+
+***************************************************************************************************************
+Oplog:
+The oplog (operations log) is a special capped collection that keeps a rolling record of all operations that modify the data stored in your databases. 
+MongoDB applies database operations on the primary and then records the operations on the primary’s oplog. 
+The secondary members then copy and apply these operations in an asynchronous process. 
+All replica set members contain a copy of the oplog, in the local.oplog.rs collection, which allows them to maintain the current state of the database.
+
+****************
+Oplog Size
+When you start a replica set member for the first time, MongoDB creates an oplog of a default size.
+
+For Unix and Windows systems
+The default oplog size depends on the storage engine:
+
+Storage Engine			Default Oplog Size	Lower Bound	Upper Bound
+In-Memory Storage Engine	5% of physical memory	50 MB		50 GB
+WiredTiger Storage Engine	5% of free disk space	990 MB		50 GB
+MMAPv1 Storage Engine		5% of free disk space	990 MB		50 GB
+
+
+****************
+Oplog Status
+To view oplog status, including the size and the time range of operations, issue the rs.printReplicationInfo() method
+rs.priintReplicationInfo()
+
+use local
+db.oplog.rs.stats().maxSize
+
+
+****************
+Change the oplog size of the replica set member
+To change the size, run the replSetResizeOplog passing the desired size in megabytes as the size parameter. 
+The specified size must be greater than 990, or 990 megabytes.
+
+The following operation changes the oplog size of the replica set member to 2 gigabytes, or 2000 megabytes.
+
+db.adminCommand({replSetResizeOplog: 1, size: 2000})
+
+
+****************************************************************************************************************
+
+Read Preference
+---------------
+db.collection.find().readPref( { mode: 'nearest' } )
+db.getMongo().setReadPref('primaryPreferred')
+
+primary  - Default mode. All operations read from the current replica set primary.
+primaryPreferred - In most situations, operations read from the primary but if it is unavailable, operations
+read from secondary members.
+secondary - All operations read from the secondary members of the replica set.
+secondaryPreferred - In most situations, operations read from secondary members but if no secondary
+members are available, operations read from the primary.
+nearest - Operations read from member of the replica set with the least network latency,
+irrespective of the member’s type.
+
+
+

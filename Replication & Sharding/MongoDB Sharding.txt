@@ -1,0 +1,155 @@
+Sharding is a method for distributing data across multiple machines. 
+MongoDB uses sharding to support deployments with very large data sets and high throughput operations.
+
+*********************************************************************************************
+Advantages of Sharding:
+
+Storage Capacity
+Sharding distributes data across the shards in the cluster, allowing each shard to contain a subset of the total cluster data. 
+As the data set grows, additional shards increase the storage capacity of the cluster.
+
+
+Reads / Writes
+MongoDB distributes the read and write workload across the shards in the sharded cluster, allowing each shard to process a subset of cluster operations. 
+Both read and write workloads can be scaled horizontally across the cluster by adding more shards.
+
+
+High Availability
+A sharded cluster can continue to perform partial read / write operations even if one or more shards are unavailable. 
+While the subset of data on the unavailable shards cannot be accessed during the downtime, reads or writes directed at the available shards can still succeed.
+
+In production environments, individual shards should be deployed as replica sets, providing increased redundancy and availability.
+
+
+********************************************************************************************
+
+Production Configuration
+In a production cluster, ensure that data is redundant and that your systems are highly available. 
+Consider the following for a production sharded cluster deployment:
+
+Deploy Config Servers as a 3 member replica set
+Deploy each Shard as a 3 member replica set
+Deploy one or more mongos routers
+
+Where possible, consider deploying one member of each replica set in a site suitable for being a disaster recovery location.
+
+
+
+********************************************************************************************
+
+Sharded Cluster
+A MongoDB sharded cluster consists of the following components:
+
+shard: 
+Each shard contains a subset of the sharded data. 
+Each shard can be deployed as a replica set.
+
+mongos: The mongos acts as a query router, providing an interface between client applications and the sharded cluster.
+
+config servers: 
+Config servers store metadata and configuration settings for the cluster. 
+As of MongoDB 3.4, config servers must be deployed as a replica set (CSRS).
+
+
+********************************************************************************************
+Deploy a Shard:
+
+3 Shards and eachone as a replicaset:
+Shard1:
+start /b mongod --shardsvr --replSet rs1 --dbpath data\s1r1 --port 37017 --logpath data\logs\s1r1.log --logappend 
+start /b mongod --shardsvr --replSet rs1 --dbpath data\s1r2 --port 37018 --logpath data\logs\s1r2.log --logappend 
+start /b mongod --shardsvr --replSet rs1 --dbpath data\s1r3 --port 37019 --logpath data\logs\s1r3.log --logappend 
+
+Shard2:
+start /b mongod --shardsvr --replSet rs2 --dbpath data\s2r1 --port 47017 --logpath data\logs\s2r1.log --logappend 
+start /b mongod --shardsvr --replSet rs2 --dbpath data\s2r2 --port 47018 --logpath data\logs\s2r2.log --logappend 
+start /b mongod --shardsvr --replSet rs2 --dbpath data\s2r3 --port 47019 --logpath data\logs\s2r3.log --logappend
+
+Shard3:
+start /b mongod --shardsvr --replSet rs3 --dbpath data\s3r1 --port 57017 --logpath data\logs\s3r1.log --logappend 
+start /b mongod --shardsvr --replSet rs3 --dbpath data\s3r2 --port 57018 --logpath data\logs\s3r2.log --logappend 
+start /b mongod --shardsvr --replSet rs3 --dbpath data\s3r3 --port 57019 --logpath data\logs\s3r3.log --logappend
+
+Config files:
+start /b mongod --configsvr --replSet rt --dbpath data\rt1 --port 58017 --logpath data\logs\rt1.log --logappend 
+start /b mongod --configsvr --replSet rt --dbpath data\rt2 --port 58018 --logpath data\logs\rt2.log --logappend 
+start /b mongod --configsvr --replSet rt --dbpath data\rt3 --port 58019 --logpath data\logs\rt3.log --logappend
+
+Router:
+start /b mongos --configdb "rt/MURALI:58017,MURALI:58018,MURALI:58019" --port 30000 --logpath data\logs\router.log
+
+Connect to Router:
+mongo --port 30000
+
+Shard Configuration:
+sh.addShard("rs1/MURALI:37017,MURALI:37018,MURALI:37019")
+sh.addShard("rs2/MURALI:47017,MURALI:47018,MURALI:47019")
+sh.addShard("rs3/MURALI:57017,MURALI:57018,MURALI:57019")
+
+Check the status:
+sh.status()
+
+Enable Sharding for a Database:
+use shardb
+sh.enableSharding("shardb")
+		
+db.createCollection("emp")
+db.emp.ensureIndex({"empid":1})
+
+
+for(var i=1; i<=1000000; i++)db.emp.insert({empid:i,name:"ZZZCCCCCCCEEEEEEEEEEEFFFFFFFFFFFFFFTbubcuebvuevbuvbuvbuvbuvbicecniercnerivibvivbiv"})
+
+use admin
+db.runCommand({shardCollection:"shardb.emp",key:{"empid":1}})
+sh.status()
+
+
+sh.startBalancer()
+sh.getBalancerState()
+sh.isBalancerRunning()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+********************************************************************************************
+Considerations Before Sharding:
+Sharded cluster infrastructure requirements and complexity require careful planning, execution, and maintenance.
+
+Careful consideration in choosing the shard key is necessary for ensuring cluster performance and efficiency. 
+You cannot change the shard key after sharding, nor can you unshard a sharded collection. 
+
+Sharding has certain operational requirements and restrictions. 
+
+If queries do not include the shard key or the prefix of a compound shard key, mongos performs a broadcast operation, querying all shards in the sharded cluster. These scatter/gather queries can be long running operations.
+
+
+
+/******* 
+C:\Users\user>mlaunch init --sharded 3 --replicaset --nodes 3 --config 3 --auth
+*****/
