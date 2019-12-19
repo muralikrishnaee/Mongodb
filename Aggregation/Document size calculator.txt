@@ -1,0 +1,47 @@
+Each document size in mongodb collection:
+db.persons.find().forEach(function(obj)
+{
+  var size = Object.bsonsize(obj);
+  print('_id: '+obj._id+' || Size: '+size+'B -> '+Math.round(size/(1024))+'KB -> '+Math.round(size/(1024*1024))+'MB (max 16MB)');
+});
+
+Max Document size:
+db.persons.find().toArray().map(function(request) { 
+return {size:Object.bsonsize(request), _id:request._id}; }).sort(function(a, b) { return a.size-b.size; }).pop();
+
+
+Min document size:
+db.persons.find().toArray().map(function(request) { 
+return {size:Object.bsonsize(request), _id:request._id}; }).sort(function(a, b) { return b.size-a.size; }).pop();
+
+db.users.insert({ "_id" : 1, "name" : "dave123", "q1" : true, "q2" : true })
+db.users.insert({ "_id" : 2, "name" : "dave2", "q1" : false, "q2" : false  })
+db.users.insert({ "_id" : 3, "name" : "ahn", "q1" : true, "q2" : true  })
+db.users.insert({ "_id" : 4, "name" : "li", "q1" : true, "q2" : false  })
+db.users.insert({ "_id" : 5, "name" : "annT", "q1" : false, "q2" : true  })
+db.users.insert({ "_id" : 6, "name" : "li", "q1" : true, "q2" : true  })
+db.users.insert({ "_id" : 7, "name" : "ty", "q1" : false, "q2" : true  })
+
+db.persons.aggregate(
+   [ { $sample: { size: 10000 } } ]
+)
+
+
+Based on Sampling Minimum and Maximum Calculation:
+db.persons.aggregate(
+   [ { $sample: { size: 3 } } ]
+).forEach(function(obj)
+{
+  var size = Object.bsonsize(obj);
+  print('_id: '+obj._id+' || Size: '+size+'B -> '+Math.round(size/(1024))+'KB -> '+Math.round(size/(1024*1024))+'MB (max 16MB)');
+});
+
+db.persons.aggregate(
+   [ { $sample: { size: 3 } } ]
+).toArray().map(function(request) { 
+return {size:Object.bsonsize(request), _id:request._id}; }).sort(function(a, b) { return a.size-b.size; }).pop();
+
+db.persons.aggregate(
+   [ { $sample: { size: 3 } } ]
+).toArray().map(function(request) { 
+return {size:Object.bsonsize(request), _id:request._id}; }).sort(function(a, b) { return b.size-a.size; }).pop();
