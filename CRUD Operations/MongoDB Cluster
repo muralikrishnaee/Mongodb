@@ -1,0 +1,12 @@
+HostName:
+cluster0-shard-00-00-jxeqq.mongodb.net
+Username:
+m001-student
+Password:
+m001-mongodb-basics
+Replica:
+Cluster0-shard-0
+Method:
+Primary Preferred
+Name:
+M001 RS
