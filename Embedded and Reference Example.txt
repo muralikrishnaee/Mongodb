@@ -1,0 +1,88 @@
+One to One Relation: 
+db.singers.insert(
+  {
+     _id : 2,
+     artistname : "XYZ",
+     address : {
+                  street : "Apollo Street",
+                  city : "Mumbai",
+                  state : "Maharashtra",
+                  country : "India"
+                }
+    }
+)
+
+One to Many Relation: 
+db.singers.insert(
+  {
+     _id : 3,
+     artistname : "XYZ",
+     albums : [
+             {
+               album : "DEF",
+               year : 2000,
+               genre : "Blues"
+               }, 
+               {
+                    album : "ABC",
+                    year : 2013,
+                    genre : "Classical Music"
+               }
+          ]
+     }
+)
+
+
+
+
+Reference Model: 
+1. Parent Document 
+db.singers.insert(
+  {
+    _id : 4,
+    artistname : "UVW"
+   }
+)
+
+2. Child Documents
+db.instruments.insert(
+{
+    _id : 9,
+    singer_name : "GHI",
+    instrument : [ "Piano", "Jaw Harps", "Keyboards" ],
+    artist_id : 4
+  }
+)
+
+db.instruments.insert(
+  {
+    _id : 10,
+    name : "ABC",
+    instrument : [ "Drums", "Flute" ],
+    artist_id : 4
+  }
+)
+
+db.instruments.insert(
+ {
+    _id : 11,
+    name : "LMN",
+    instrument : "Saxa",
+    artist_id : 4
+  }
+)
+
+
+3. Querying the MongoDB Relationships
+db.singers.aggregate([
+  {
+     $lookup:
+       {
+         from: "instruments",
+         localField: "_id",
+         foreignField: "artist_id",
+         as: "band_members"
+       }
+        },
+        { $match : { artistname : "UVW" } }
+]).pretty()
