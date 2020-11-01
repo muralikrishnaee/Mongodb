@@ -1,0 +1,62 @@
+* Case statement use case in mongodb;
+
+db.timespent.insert([
+{ "name" : "ABC", "min_spent" : 100 },
+{ "name" : "DEF", "min_spent" : 200 },
+{ "name" : "GHI", "min_spent" : 300 },
+{ "name" : "JKL", "min_spent" : 400 },
+{ "name" : "MNO", "min_spent" : 500 }])
+
+
+db.timespent.aggregate([
+  { $project: {
+    "_id": 0,
+    "range": {
+      $concat: [{
+        $cond: [ { $lte: ["$min_spent", 250] }, "range 0-250", "" ]
+      }, {
+        $cond: [ { $and: [
+          { $gte: ["$min_spent", 251] }, 
+          { $lt:  ["$min_spent", 450] } 
+        ] }, "range 251-450", "" ]
+      }, {
+        $cond: [ { $and: [
+          { $gte: ["$min_spent", 451] }, 
+          { $lt:  ["$min_spent", 650] } 
+        ] }, "range 450-650", "" ]
+      }]
+    }
+  }},
+  { $group: { _id: "$range", count: { $sum: 1 } } },
+  { $sort: { "_id": 1 } },
+])
+
+
+var ranges = [ 0, 250, 450, 650 ];
+var rangeProj = {
+  "$concat": []
+};
+
+for (i = 1; i < ranges.length; i++) {
+  rangeProj.$concat.push({
+    $cond: {
+      if: {
+        $and: [{
+          $gte: [ "$min_spent", ranges[i-1] ]
+        }, {
+          $lt: [ "$min_spent", ranges[i] ]
+        }]
+      },
+      then: "range " + ranges[i-1] + "-" + ranges[i],
+      else: ""
+    }
+  })
+}
+
+db.timespent.aggregate([{
+  $project: { "_id": 0, "range": rangeProj }
+}, {
+  $group: { _id: "$range", count: { $sum: 1 } }
+}, {
+  $sort: { "_id": 1 }
+}]);
